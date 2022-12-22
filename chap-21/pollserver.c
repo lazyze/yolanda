@@ -23,10 +23,11 @@ int main(int argc, char **argv) {
     }
 
     for (;;) {
+        //timeout设置为-1，表示在IO事件发生之前poll调用一直阻塞
         if ((ready_number = poll(event_set, INIT_SIZE, -1)) < 0) {
             error(1, errno, "poll failed ");
         }
-
+        //监听套接字有连接建立完成，检测到IO事件
         if (event_set[0].revents & POLLRDNORM) {
             socklen_t client_len = sizeof(client_addr);
             connected_fd = accept(listen_fd, (struct sockaddr *) &client_addr, &client_len);
@@ -47,7 +48,7 @@ int main(int argc, char **argv) {
             if (--ready_number <= 0)
                 continue;
         }
-
+        //循环处理查看event_set里面的其他事件，也就是已连接套接字的可读事件
         for (i = 1; i < INIT_SIZE; i++) {
             int socket_fd;
             if ((socket_fd = event_set[i].fd) < 0)
@@ -57,7 +58,7 @@ int main(int argc, char **argv) {
                     if (write(socket_fd, buf, n) < 0) {
                         error(1, errno, "write error");
                     }
-                } else if (n == 0 || errno == ECONNRESET) {
+                } else if (n == 0 || errno == ECONNRESET) { //读到EOF或者是连接重置，则关闭这个连接，并且把event_set对应的pollfd重置
                     close(socket_fd);
                     event_set[i].fd = -1;
                 } else {
