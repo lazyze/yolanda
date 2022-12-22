@@ -30,7 +30,7 @@ struct event_loop {
     pthread_t owner_thread_id;
     pthread_mutex_t mutex;
     pthread_cond_t cond;
-    int socketPair[2];
+    int socketPair[2];  //用于唤醒阻塞的子线程
     char *thread_name;
 };
 

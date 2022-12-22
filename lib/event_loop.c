@@ -36,6 +36,8 @@ int event_loop_handle_pending_channel(struct event_loop *eventLoop) {
     return 0;
 }
 
+//往子线程的数据中增加需要处理的channel event对象
+//所有增加的channel对象以链表的形式维护在子线程的数据结构中
 void event_loop_channel_buffer_nolock(struct event_loop *eventLoop, int fd, struct channel *channel1, int type) {
     //add channel into the pending list
     struct channel_element *channelElement = malloc(sizeof(struct channel_element));
@@ -58,9 +60,11 @@ int event_loop_do_channel_event(struct event_loop *eventLoop, int fd, struct cha
     event_loop_channel_buffer_nolock(eventLoop, fd, channel1, type);
     //release the lock
     pthread_mutex_unlock(&eventLoop->mutex);
+    //如果是主线程发起操作，则调用event_loop_wakeup 唤醒子线程
     if (!isInSameThread(eventLoop)) {
         event_loop_wakeup(eventLoop);
     } else {
+        //如果是子线程自己，则直接可以操作
         event_loop_handle_pending_channel(eventLoop);
     }
 

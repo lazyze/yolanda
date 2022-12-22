@@ -127,7 +127,7 @@ tcp_server_init(struct event_loop *eventLoop, struct acceptor *acceptor,
     return tcpServer;
 }
 
-
+//如果有新的连接产生，主线程的操作逻辑
 int handle_connection_established(void *data) {
     struct TCPserver *tcpServer = (struct TCPserver *) data;
     struct acceptor *acceptor = tcpServer->acceptor;
@@ -136,11 +136,13 @@ int handle_connection_established(void *data) {
     struct sockaddr_in client_addr;
     socklen_t client_len = sizeof(client_addr);
     int connected_fd = accept(listenfd, (struct sockaddr *) &client_addr, &client_len);
+    //设置为非阻塞套接字
     make_nonblocking(connected_fd);
 
     yolanda_msgx("new connection established, socket == %d", connected_fd);
 
     // choose event loop from the thread pool
+    //从线程池里选择一个event_loop来服务这个新的连接套接字
     struct event_loop *eventLoop = thread_pool_get_loop(tcpServer->threadPool);
 
     // create a new tcp connection
@@ -168,6 +170,7 @@ void tcp_server_start(struct TCPserver *tcpServer) {
     //acceptor主线程， 同时把tcpServer作为参数传给channel对象
     struct channel *channel = channel_new(acceptor->listen_fd, EVENT_READ, handle_connection_established, NULL,
                                           tcpServer);
+    //注册服务端的监听套接字
     event_loop_add_channel_event(eventLoop, channel->fd, channel);
     return;
 }
